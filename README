@@ -60,3 +60,5 @@ robot_name@appspot.com
 Then type in your number (1xxxyyyzzzz), wait for wave to respond (sometime it takes more than one try especially when you just deployed the robot).  You should see a long url and click on that.  You phone will ring, answer the phone and wait for the greeting 'welcome to conference tutorial'.  Now create another blip with the correctly formatted number and submit that, click on the new link and the other phone will get a call as well.  You can test it with someone else as I have.  All the callers will be put into the same conference room.
 
 Also I used irb extensively to get the tropo part working before moving on to the wave robot just to reduce the deployment cycle in development.
+
+The live demo lives on appengine.  Add waference@appspot.com and test it out.
