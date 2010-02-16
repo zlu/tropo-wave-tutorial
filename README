@@ -1,0 +1,62 @@
+Tutorial for a simple Google Wave Robot that does conference call
+
+I'm using Rave (@diminish7 on github): http://github.com/diminish7/rave
+and token session API from tropo: http://docs.tropo.com/appengine/2.0/frame.jsp?page=troposessionapi.htm
+
+You should follow @diminish7's instruction on Rave to setup a google wave project.
+Edit robot.rb, define blip_submitted method:
+
+    def blip_submitted(event, context)
+      blip = event.blip
+      text = blip.content
+      call_url = CALL_URL + "&numberToDial=" + text
+      call_html = "<a href=\"" + call_url + "\">Click to call</a>"
+      @logger.info "+++++++++++++++++++++++++" + call_html
+      blip.set_text(call_url)
+#      blip.set_text(call_html, :format => "html".to_sym)
+#      result = open(call_url).read
+    end
+
+This method listens to the blip_submitted event, intercepts the blip.
+The content of the blip is a US phone number, starting with country code 1.  e.g. 13334445555
+I haven't tried non-usa numbers, you have need to get tropo to grant you permission or something.
+You may not want to use google voice as it has some complexity.
+The code above extracts the phone number and create a url to and set it into the blip.
+Currently it is being set as a long and ugly link only because I couldn't get the html rendering working.
+See the commented out line above where it's calling set_text with :format.  If someone can get that working, please let me know or just send a pull request.
+The line below attempts to use open-uri so that user won't even need to click on the url.  However that approach doesn't work for me either.  I was getting some kind of security exception.  I haven't had a chance to look into it.  Suggestions are welcome here as well.
+
+Next create a tropo appliation, create a hosted file, and an outbound token (since we are using token session api to make outbound calls).
+
+In the robot.rb class, define:
+
+    TROPO_TOKEN = your_tropo_token
+    CALL_URL = 'http://api.tropo.com/1.0/sessions?action=create&token=' + TROPO_TOKEN
+
+Now edit the host file:
+
+# this is your tropo app's voice and messaging number, so change it!
+conf_number = "14089405905"
+
+unless $numberToDial.nil?
+  call('tel:+' + $numberToDial, 
+  { :callerID => conf_number,
+    :onAnswer => lambda do |event| 
+      log '******************** Answered from ' + event.inspect.to_s
+      transfer 'tel:+' + conf_number
+    end
+  })
+else
+  answer
+  wait 1000
+  say 'welcome to conference tutorial'
+  conference( "1234", { :playTones => true })
+end
+
+The code above will first dial back to a phone number you specified in Google Wave, once you answer the call, it will transfer the call back to the conference room.  That's all it does.
+
+Once you save the tropo porject, deploy your robot to wave, you can create a new wave, add your robot:
+robot_name@appspot.com
+Then type in your number (1xxxyyyzzzz), wait for wave to respond (sometime it takes more than one try especially when you just deployed the robot).  You should see a long url and click on that.  You phone will ring, answer the phone and wait for the greeting 'welcome to conference tutorial'.  Now create another blip with the correctly formatted number and submit that, click on the new link and the other phone will get a call as well.  You can test it with someone else as I have.  All the callers will be put into the same conference room.
+
+Also I used irb extensively to get the tropo part working before moving on to the wave robot just to reduce the deployment cycle in development.
